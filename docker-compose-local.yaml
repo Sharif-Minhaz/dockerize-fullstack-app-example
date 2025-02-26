@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+    frontend:
+        build: ./client
+        container_name: user_client
+        ports:
+            - 5173:5173
+        volumes:
+            - ./client/:/app
+            - /app/node_modules
+        env_file:
+            - client/.env
+        environment:
+            - NODE_ENV=production
+            - VITE_API_URL=${VITE_API_URL}
+            - VITE_CLIENT_SECRET=${VITE_CLIENT_SECRET}
+
+    backend:
+        build: ./server
+        container_name: user_server
+        ports:
+            - 8080:8080
+        volumes:
+            - ./server/:/app
+            - /app/node_modules
+        env_file:
+            - server/.env
+        environment:
+            - NODE_ENV=production
+            - SERVER_KEY=${SERVER_KEY}

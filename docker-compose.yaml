@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+    backend:
+        image: minhaz3001/user_server:v0.0.1
+        container_name: user_server
+        ports:
+            - 8080:8080
+        environment:
+            - NODE_ENV=production
+            - SERVER_KEY=12345000000
+
+    frontend:
+        image: minhaz3001/user_client:latest
+        container_name: user_client
+        ports:
+            - 3000:80
+        depends_on:
+            - backend
