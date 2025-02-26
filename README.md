@@ -1,4 +1,6 @@
-# Docker compose file to getting started as production:
+# Docker Setup Guide
+
+## **Docker Compose for Production**
 
 ```yaml
 version: "3.8"
@@ -17,19 +19,41 @@ services:
         image: minhaz3001/user_client:latest
         container_name: user_client
         ports:
-            - 3000:80
+            - 80:80
         depends_on:
             - backend
 ```
 
-# Docker compose file to getting started as development:
+### **Starting the Production Containers**
+
+```bash
+docker-compose up -d
+```
+
+To check logs:
+
+```bash
+docker-compose logs -f
+```
+
+To stop and remove containers:
+
+```bash
+docker-compose down
+```
+
+## **Docker Compose for Development**
 
 ```yaml
 version: "3.8"
 
 services:
     frontend:
-        build: ./client
+        build:
+            context: ./client
+            args:
+                - VITE_API_URL=${VITE_API_URL}
+                - VITE_CLIENT_SECRET=${VITE_CLIENT_SECRET}
         container_name: user_client
         ports:
             - 5173:5173
@@ -38,10 +62,6 @@ services:
             - /app/node_modules
         env_file:
             - client/.env
-        environment:
-            - NODE_ENV=production
-            - VITE_API_URL=${VITE_API_URL}
-            - VITE_CLIENT_SECRET=${VITE_CLIENT_SECRET}
 
     backend:
         build: ./server
@@ -53,12 +73,15 @@ services:
             - /app/node_modules
         env_file:
             - server/.env
-        environment:
-            - NODE_ENV=production
-            - SERVER_KEY=${SERVER_KEY}
 ```
 
-# Docker file for client development:
+### **Starting the Development Containers**
+
+```bash
+docker-compose up -d
+```
+
+## **Dockerfile for Client Development**
 
 ```dockerfile
 FROM node
@@ -67,27 +90,35 @@ COPY package*.json ./
 RUN npm i
 COPY . .
 EXPOSE 5173
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]
 ```
 
-# Docker file for client production build:
+## **Dockerfile for Client Production**
 
 ```dockerfile
+# Build Stage
 FROM node:18 AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# Pass environment variables during build
+ARG VITE_API_URL
+ARG VITE_CLIENT_SECRET
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_CLIENT_SECRET=$VITE_CLIENT_SECRET
+
 RUN npm run build
 
-# Serve static files using nginx
+# Serve static files using Nginx
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-# Docker file for server development:
+## **Dockerfile for Server Development**
 
 ```dockerfile
 FROM node
@@ -99,7 +130,7 @@ EXPOSE 8080
 CMD ["npm", "run", "dev"]
 ```
 
-# Docker file for server production build:
+## **Dockerfile for Server Production**
 
 ```dockerfile
 FROM node:18
@@ -109,4 +140,53 @@ RUN npm install --omit=dev
 COPY . .
 EXPOSE 8080
 CMD ["node", "index.js"]
+```
+
+## **Building Docker Images**
+
+### **Client Production Build**
+
+```bash
+docker build -t minhaz3001/user_client -f client/Dockerfile client
+```
+
+### **Server Production Build**
+
+```bash
+docker build -t minhaz3001/user_server -f server/Dockerfile server
+```
+
+### **Client Development Build**
+
+```bash
+docker build -t minhaz3001/user_client -f client/Dockerfile client
+```
+
+### **Server Development Build**
+
+```bash
+docker build -t minhaz3001/user_server -f server/Dockerfile server
+```
+
+## **Running Development Containers Individually**
+
+### **Client Development Container**
+
+```bash
+docker run -d --name user_client \
+  -p 5173:5173 \
+  -v $(pwd)/client:/app \
+  -v /app/node_modules \
+  minhaz3001/user_client
+```
+
+### **Server Development Container**
+
+```bash
+docker run -d --name user_server \
+  -p 8080:8080 \
+  -v $(pwd)/server:/app \
+  -v /app/node_modules \
+  --env-file $(pwd)/server/.env \
+  minhaz3001/user_server
 ```
